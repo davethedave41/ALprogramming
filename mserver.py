@@ -134,42 +134,66 @@ class Mserver:
                 a call other than GET: "+ resp_part + "\n")
                 client_s.send('HTTP/1.1 405 Method Not Allowed\r\n\r\n')
                 client_s.close()
-                self.log_info(message)
+            #    self.log_info(message)
                 message = 'HTTP/1.1 405 Method Not Allowed\r\n\r\n'
-                self.log_info(message)
+            #    self.log_info(message)
         else:
             # blank request call by client
             client_s.send('')
             client_s.close()
             message = 'Client with port: '+str(client_address[1])+'connection closed \n'
-            self.log_info(message)
+        #    self.log_info(message)
 
     def find_file(self, url_file_name, client_s, port_number, client_address,
-    start_time, url_connect, url_slash):
+                  start_time, url_connect, url_slash):
         try:
             # getting the cached file for the url if it exists
             cached_file = open(url_file_name, 'r')
             # reading the contents of the file
             message = 'Client with port:'+str(client_address[1])+': Cache hit occurred \
             for the request. Reading from file \n'
-            self.log_info(message)
+            #self.log_info(message)
             # get proxy server details....
             response_message = ''
             # print 'reading data line by line and appending it'
             with open(url_file_name) as f:
                 for line in f:
+                    print(line)
                     response_message += line
             # print 'finished reading the data'
             # appending the server details message to the response
             # response_message += server_details_message
             #closing the file handler
             cached_file.close()
+
             # sending the cached data
-            
-    def log_info(self, message):
-        logger_file = open(logger_file_name, 'a')
-        logger_file.write(message)
-        logger_file.close()
+            client_s.send(response_message)
+            end_time = time.time()
+            message = 'Client with port: '+str(client_address[1])+'Time Elapsed(RTT): \
+            '+str(end_time - start_time)+"seconds \n"
+            # self.log_info(message)
+
+        except IOError as e:
+            message = 'Client with port: '+str(client_address[1])+' Cache miss occurred \
+            for the request. Goin\' to have to report to the web server on this one chief \n'
+            self.log_info(message)
+            '''there is no cached file for the specified URL from the proxy server and
+            cache it. To get the URL we nedd to create a socket on proxy machine'''
+            proxy_sock = None
+            try:
+                # creating socket from proxy server
+                proxy_sock = socket(AF_INET, SOCK_STREAM)
+            except error as e:
+                print('Unable to create the socket. Error: {}'.format(e))
+                message = 'Unable to create the socket. Error: {}'.format(e)
+                # self.log_info(message)
+            try:
+                # setting time out so that after the last packet if no other packet comes socket will auto close in 2 seconds
+                proxy_sock.settimeout(2)
+    #def log_info(self, message):
+    #    logger_file = open(logger_file_name, 'a')
+    #    logger_file.write(message)
+    #    logger_file.close()
 try:
     host_ip = socket.gethostbyname('www.google.com')
 except socket.gaierror:
