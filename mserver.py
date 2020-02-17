@@ -190,6 +190,82 @@ class Mserver:
             try:
                 # setting time out so that after the last packet if no other packet comes socket will auto close in 2 seconds
                 proxy_sock.settimeout(2)
+                # connecting to the url specified by the client
+                proxy_sock.connect((url_connect, port_number))
+                # sending GET request from client to the web server
+                web_request = str()
+                if url_slash: # url_slash is other than None
+                    web_request = b'GET /'+url_slash[1:]+'HTTP/1.1\nHost: \
+                    '+url_connect+'\n\n'
+                else:
+                    web_request = b'GET / HTTP/1.1\nHost: '+url_connect+'\n\n'
+                # send web request to server
+                proxy_sock.send(web_request)
+                message = 'Client with port: '+str(client_address[1])+'\
+                 generated request of length ('+str(len(web_request))+') bytes \n'
+                self.log_info(message)
+                message = 'Client with port: '+str(client_address[1])+'generated\
+                request to web server as: '+str(web_request)+'\n'
+                self.log_info(message)
+                # getting the web server response which is expected to be a file
+                web_serv_rappend = ''
+                # timeout flag incase there is a timeout after 2 seconds of waiting
+                timeout_flag = False
+                while True:
+                    try:
+                        web_serv_resp = proxy_sock.recv(4096)
+                    except timeout:
+                        # a time out occurred on waiting for server response so break
+                        # out of loop
+                        if len(web_serv_rappend) <= 0:
+                            timeout_flag = True
+                        break
+                    if len(web_serv_resp) > 0:
+                        web_serv_rappend += web_serv_resp
+                    else:
+                        # all the data has been received
+                        break
+                # variable to store response to file
+                response_to_file = web_serv_rappend
+                # storing the response from the webserver to the client locally
+                web_serv_rappend += server_details_message
+                if timeout_flag:
+                    # timeout ocurred
+                    err_resp = 'HTTP/1.1 408 Request timeout \r\n\r\n'
+                    # err_resp += serv_deets
+                    client_s.send(err_resp)
+                else:
+                    # sernding the web server response back to the client
+                    client_s.send(web_serv_resp)
+                end_time = time.time()
+                message = 'Client with port: '+str(client_address[1])+' Time Elapsed(RTT): \
+                '+str(end_time- start_time)+' seconds \n'
+                # self.log_info(message)
+                # caching the response on the proxy server
+                proxy_temp_file = open(url_file_name, 'wb')
+                # writing entire response to file
+                proxy_temp_file.write(response_to_file)
+                proxy_temp_file.close()
+                message = 'Client with port: '+str()+' got response of length \
+                '+str(len(response_to_file))+' bytes \n'
+                # self.log_info(message)
+                # closing the proxy server socket
+                proxy_sock.close()
+            except error as e:
+                # sending page not found response to client
+                error_msg = ''
+                '''if str(e) == 'timed out:'
+                error_msg = 'HTTP/1.1 404 Not Found \r\n'
+                client_s.send('HTTP/1.1 408 Request timeout \r\n\r\n')
+                else:'''
+                error_msg = 'HTTP/1.1 404 Not Found \r\n\r\n'
+                client_s.send('HTTP/1.1 404 Not Found \r\n\r\n')
+                end_time = time.time()
+                message = 'Client with port: '+str(client_address[1])+ 'Following error\
+                occurred: '+str(e)+'\n'
+                
+
+
     #def log_info(self, message):
     #    logger_file = open(logger_file_name, 'a')
     #    logger_file.write(message)
