@@ -126,8 +126,50 @@ class Mserver:
                     pass
                 else:
                     port_number = int(url_part.split(':')[1])
-                self.find_file(url_file_name)
+                self.find_file(url_file_name, client_s, port_number,
+                client_address, start_time, url_connect, url_slash)
+            else:
+                # not a GET command
+                message = "Client with port: " +str(client_address[1]+ "generated\
+                a call other than GET: "+ resp_part + "\n")
+                client_s.send('HTTP/1.1 405 Method Not Allowed\r\n\r\n')
+                client_s.close()
+                self.log_info(message)
+                message = 'HTTP/1.1 405 Method Not Allowed\r\n\r\n'
+                self.log_info(message)
+        else:
+            # blank request call by client
+            client_s.send('')
+            client_s.close()
+            message = 'Client with port: '+str(client_address[1])+'connection closed \n'
+            self.log_info(message)
 
+    def find_file(self, url_file_name, client_s, port_number, client_address,
+    start_time, url_connect, url_slash):
+        try:
+            # getting the cached file for the url if it exists
+            cached_file = open(url_file_name, 'r')
+            # reading the contents of the file
+            message = 'Client with port:'+str(client_address[1])+': Cache hit occurred \
+            for the request. Reading from file \n'
+            self.log_info(message)
+            # get proxy server details....
+            response_message = ''
+            # print 'reading data line by line and appending it'
+            with open(url_file_name) as f:
+                for line in f:
+                    response_message += line
+            # print 'finished reading the data'
+            # appending the server details message to the response
+            # response_message += server_details_message
+            #closing the file handler
+            cached_file.close()
+            # sending the cached data
+            
+    def log_info(self, message):
+        logger_file = open(logger_file_name, 'a')
+        logger_file.write(message)
+        logger_file.close()
 try:
     host_ip = socket.gethostbyname('www.google.com')
 except socket.gaierror:
