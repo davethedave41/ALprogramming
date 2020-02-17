@@ -263,8 +263,16 @@ class Mserver:
                 end_time = time.time()
                 message = 'Client with port: '+str(client_address[1])+ 'Following error\
                 occurred: '+str(e)+'\n'
-                
-
+                # self.log_info(message)
+                message = 'Client with port: '+str(client_address[1])+'response sent:\
+                '+error_msg+" \n"
+                # self.log_info(message)
+                message = 'Client with port: '+str(client_address[1])+ 'Time Elapsed(RTT):\
+                '+str(end_time - start_time)+' seconds \n'
+                # self.log_info(message)
+        # closing the connection with client
+        message = 'Client with port: '+str(client_address[1])+' connection closed \n'
+        # self.log_info(message)
 
     #def log_info(self, message):
     #    logger_file = open(logger_file_name, 'a')
