@@ -1,4 +1,4 @@
-import requests, socket, signal,sys, time, re
+import requests, socket, signal,sys, time, re, threading, signal, datetime
 
 # sys.argv gets the arguments from the command line
 if len(sys.argv) == 2:
@@ -12,7 +12,7 @@ logger_file_name = "log.txt"
 class Mserver:
     def __init__(self):
         # make it so it stops on Ctrl+C
-        #signal.signal(signal,SIGINT, self.shutdown)
+    #    signal.signal(signal,SIGINT, self.shutdown)
         try:
             # Create a TCP socket
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -24,14 +24,16 @@ class Mserver:
             #self.log_info(message)
 
         # bind the socket to a local host and a port
-        self.s.bind(('', port))
-        print("socket binded to {}".format(port))
+        self.s.bind(('127.0.0.1', port))
+        # print("socket binded to {}".format(port))
         # server socket allowing up to 10 client connections
         self.s.listen(7)
-        message = "Host Name: Localhost and Host address: 127.0.0.1 and Host port:\
-        "+str(port) + "\n"
-        #self.log_info(message)
-        print('Server is ready to listen to clients')
+        message = str(datetime.datetime.now())+'\n'
+        self.log_info(message)
+        message = "Host Name: Localhost\nHost address: 127.0.0.1\nHost port: "+str(port)+"\n"
+        print(message)
+        self.log_info(message)
+        print('Server is ready to listen to clients\n')
 
 # class threading.Thread(group=None, target=None, name=None, args=(),
 #                kwargs={}, *, daemon=None)  threading class parameters
@@ -40,25 +42,24 @@ class Mserver:
 # Translate the host/port argument into a sequence of 5-tuples that contain all the necessary # arguments for creating a socket connected to that service. host is a domain name, a string #  representation of an IPv4/v6 address or None. port is a string service name such as
 # 'http', a numeric port number or None. By passing None as the value of host and port, you can pass NULL # to the underlying C API.
     def listen_to_client(self):
-        """ waiting for dumbass client to connect over tcp to there
+        """ waiting for clients to connect over tcp to the
         proxy server"""
         while True:
 
             # Establish the connection -> accept connetions from outside
             (clientSocket, client_address) = self.s.accept()
-            print(client_address)
             # printing the relevant client details on the server side
             client_details_log = "-----------the book of facts-----------\n"
             client_details_log += "Client host name: "+str(client_address[0])+"\
             \nClient port number: "+str(client_address[1])+"\n"
             client_socket_details = socket.getaddrinfo(str(client_address[0]),
             client_address[1])
-            # print(client_socket_details)
+            # print(client_sockocket_details)
             client_details_log += "Socket family: "+str(client_socket_details[0][0])+"\n"
             client_details_log += "Socket type: "+str(client_socket_details[0][1])+"\n"
             client_details_log += "Timeout: "+str(clientSocket.gettimeout())+"\n"
             client_details_log += "-----------------------------------------\n"
-            #self.log_info(client_details_log)
+            self.log_info(client_details_log)
             # Logging
             message = "Client IP address: "+str(client_address[0])+" and Client port \
                        number: "+str(client_address[1])+"\n"
@@ -70,24 +71,27 @@ class Mserver:
             d.start()
 
         self.s.close()
-    def proxy_thread(self,client_s,client_address):
-        print('New thread given to new connection')
+    def proxy_thread(self,client_sock,client_address):
+        print(str(datetime.datetime.now()))
+        # 'v' is an arrow down
+        print('New connection \'v\'\nClient address: '+str(client_address[0])+'\
+        \nClient port number: '+str(client_address[1])+'\n')
         # starting timer to calculate elapsed time
         start_time = time.time()
         # getting client request
-        client_request = client_s.recv(1024)
+        client_request = client_sock.recv(1024)
         # if the client request is not empty
         if client_request:
             # getting request length
             request_length = len(client_request)
-            message = "Client with port: "+str(client_address[1])+"request length is\
-            "+str(request_length)+"\bytes \n"
-
+            message = 'Request Size: '+str(request_length)+' bytes\n'
+            self.log_info(message)
+            print(message)
             # parsing the request line and headers sent by the client
-            # since the request will be of the form GET http://www.pornhub.com HTTP/1.1 extracting the http part
-            resp_part = client_request.split(' ')[0]
-            if resp_part == 'GET':
-                http_part = client_request.split(' ')[1]
+            # since the request will be of the form GET http://www.dave.com HTTP/1.1 extracting the http part
+            response = str(client_request).split(' ')[0]
+            if response == 'GET':
+                http_part = str(client_request).split(' ')[1]
                 #stripping the http part to get only the URL and removing the trailing / from the request
                 double_slash_pos = str(http_part).find('//')
                 url_connect = ''
@@ -96,17 +100,17 @@ class Mserver:
                 # if no http part to the url
                 if double_slash_pos == -1:
                     url_part = http_part[1:]
-                    # getting the www.pornhub.com part
+                    # getting the www.dave.com part
                     url_connect = url_part.split('/')[0]
                 else:
-                    # if the url ends with / removing it e.g www.pornhub.com/
+                    # if the url ends with / removing it e.g www.dave.com/
                     if http_part.split('//')[1][-1] == "/":
                         url_part = http_part.split('//')[1][:-1]
                         # removing the '/'
                         url_connect = url_part.split('/')[0]
                     else:
                         url_part = http_part.split('//')[1]
-                        # getting the www.pornhub.com part
+                        # getting the www.dave.com part
                         url_connect = url_part.split('/')[0]
                 # getting the part after the host --> TLD
                 url_slash_check = url_part.split('/')[1:]
@@ -126,26 +130,27 @@ class Mserver:
                     pass
                 else:
                     port_number = int(url_part.split(':')[1])
-                self.find_file(url_file_name, client_s, port_number,
+                self.find_file(url_file_name, client_sock, port_number,
                 client_address, start_time, url_connect, url_slash)
             else:
                 # not a GET command
-                message = "Client with port: " +str(client_address[1]+ "generated\
-                a call other than GET: "+ resp_part + "\n")
-                client_s.send('HTTP/1.1 405 Method Not Allowed\r\n\r\n')
-                client_s.close()
+                message = "Client with port: " +str(client_address[1])+ "generated\
+                a call other than GET: "+ response +"\n"
+                client_sock.send(bytes('HTTP/1.1 405 Method Not Allowed\r\n\r\n','utf8'))
+                client_sock.close()
             #    self.log_info(message)
                 message = 'HTTP/1.1 405 Method Not Allowed\r\n\r\n'
             #    self.log_info(message)
         else:
             # blank request call by client
-            client_s.send('')
-            client_s.close()
+            client_sock.send('')
+            client_sock.close()
             message = 'Client with port: '+str(client_address[1])+'connection closed \n'
         #    self.log_info(message)
 
-    def find_file(self, url_file_name, client_s, port_number, client_address,
+    def find_file(self, url_file_name, client_sock, port_number, client_address,
                   start_time, url_connect, url_slash):
+        print("g")
         try:
             # getting the cached file for the url if it exists
             cached_file = open(url_file_name, 'r')
@@ -167,7 +172,7 @@ class Mserver:
             cached_file.close()
 
             # sending the cached data
-            client_s.send(response_message)
+            client_sock.send(response_message)
             end_time = time.time()
             message = 'Client with port: '+str(client_address[1])+'Time Elapsed(RTT): \
             '+str(end_time - start_time)+"seconds \n"
@@ -233,10 +238,10 @@ class Mserver:
                     # timeout ocurred
                     err_resp = 'HTTP/1.1 408 Request timeout \r\n\r\n'
                     # err_resp += serv_deets
-                    client_s.send(err_resp)
+                    client_sock.send(err_resp)
                 else:
                     # sernding the web server response back to the client
-                    client_s.send(web_serv_resp)
+                    client_sock.send(web_serv_resp)
                 end_time = time.time()
                 message = 'Client with port: '+str(client_address[1])+' Time Elapsed(RTT): \
                 '+str(end_time- start_time)+' seconds \n'
@@ -256,10 +261,10 @@ class Mserver:
                 error_msg = ''
                 '''if str(e) == 'timed out:'
                 error_msg = 'HTTP/1.1 404 Not Found \r\n'
-                client_s.send('HTTP/1.1 408 Request timeout \r\n\r\n')
+                client_sock.send('HTTP/1.1 408 Request timeout \r\n\r\n')
                 else:'''
                 error_msg = 'HTTP/1.1 404 Not Found \r\n\r\n'
-                client_s.send('HTTP/1.1 404 Not Found \r\n\r\n')
+                client_sock.send('HTTP/1.1 404 Not Found \r\n\r\n')
                 end_time = time.time()
                 message = 'Client with port: '+str(client_address[1])+ 'Following error\
                 occurred: '+str(e)+'\n'
@@ -274,18 +279,21 @@ class Mserver:
         message = 'Client with port: '+str(client_address[1])+' connection closed \n'
         # self.log_info(message)
 
-    #def log_info(self, message):
-    #    logger_file = open(logger_file_name, 'a')
-    #    logger_file.write(message)
-    #    logger_file.close()
-try:
-    host_ip = socket.gethostbyname('www.google.com')
-except socket.gaierror:
+    def log_info(self, message):
+        logger_file = open(logger_file_name, 'a')
+        logger_file.write(message)
+        logger_file.close()
+#try:
+#    host_ip = socket.gethostbyname('www.google.com')
+#except socket.gaierror:
     # could not resolve the host
-    print("there was an error resolving the host")
-    sys.exit()
-print(sys.argv)
-port = 12345
-serv = Mserver()
-serv.listen_to_client()
-print(serv.s)
+    #print("there was an error resolving the host")
+    #sys.exit()
+#print(sys.argv)
+#serv = Mserver()
+#serv.listen_to_client()
+#print(serv.s)
+if __name__ == "__main__": # if running this through the command line then run this
+    # creating the instance of the server class
+    server = Mserver()
+    server.listen_to_client()
