@@ -157,9 +157,9 @@ class Mserver:
         else:
             # blank request call by client
             client_sock.send('')
-            print('Client be like: UwU (blank)')
+            print('Empty message\n')
             client_sock.close()
-            message = 'Client with port: '+str(client_address[1])+'connection closed \n'
+            message = 'Client with port: '+str(client_address[1])+'\nConnection CLOSED\n'
             print(message)
         #    self.log_info(message)
 
@@ -186,21 +186,20 @@ class Mserver:
             # print 'reading data line by line and appending it'
             with open(url_file_name) as f:
                 for line in f:
-                    print(line)
                     response_message += line
             # print 'finished reading the data'
             # appending the server details message to the response
-            response_message += server_details_message
+            # response_message += server_details_message
             #closing the file handler
             cached_file.close()
             # sending the cached data
             client_sock.send(response_message.encode('utf8'))
             end_time = time.time()
-            message = 'Client with port: '+str(client_address[1]) +'''\nResponse Length:  '''+str(len(response_message))+ 'bytes\n'
+            message = 'Client with port: '+str(client_address[1]) +'''\nResponse Length:  '''+str(len(response_message))+ 'bytes'
             print(message)
             self.log_info(message)
             message = 'Client with port: '+str(client_address[1])+'''\nTime Elapsed(RTT):
-            '''+str(end_time - start_time)+' seconds\n'
+            '''+str(end_time - start_time)+' seconds'
             print(message)
             self.log_info(message)
 
@@ -226,28 +225,29 @@ class Mserver:
                 # sending GET request from client to the web server
                 web_request = str()
                 if url_slash: # url_slash is other than None
-                    web_request = b'GET /'+url_slash[1:]+'HTTP/1.1\nHost: \
-                        '+url_connect+'\n\n'
+                    web_request = 'GET /'+url_slash[1:]+' HTTP/1.1\nHost: '+url_connect+'\n\n'
                 else:
-                    web_request = 'b\'GET / HTTP/1.1\nHost: '+str(url_connect)+'\n\n'
+                    web_request = 'GET / HTTP/1.1\nHost: '+str(url_connect)+'\n\n'
+                    print("we send this version: "+web_request)
                 # send web request to server
                 proxy_sock.send(web_request.encode('utf8'))
                 message = 'Client with port: '+str(client_address[1])+'\
                     generated request of length ('+str(len(web_request))+') bytes \n'
                 self.log_info(message)
-                message = 'Client with port: '+str(client_address[1])+'generated\
-                    request to web server as: '+str(web_request)+'\n'
+                message = 'Client with port: '+str(client_address[1])+'''generated
+                    request to web server as: '''+str(web_request)+'\n'
+                print(message)
                 self.log_info(message)
                 # getting the web server response which is expected to be a file
-                server_socket_details = getaddrinfo(url_connect, port_number)
+                server_socket_details = socket.getaddrinfo(url_connect, port_number)
                 server_details_message = '<body> Web Server Details:- <br />'
                 server_details_message += 'Server host name: '+url_connect+''' <br /> \nServer port number:  '''+str(port_number)+'<br />\n'
                 server_details_message += 'Socket family: ' + str(server_socket_details[0][0]) + '<br />'
                 server_details_message += 'Socket type: ' + str(server_socket_details[0][1]) + '<br />'
                 server_details_message += 'Socket protocol: ' + str(server_socket_details[0][2]) + '<br />'
                 server_details_message += 'Timeout: '+str(client_sock.gettimeout())+'<br /> </body>\n'
-                print(server_details_message)
-                web_serv_rappend = ''
+                # use this variable to get the web's response message and check if it is empty in the loop incase there is no response from the server
+                append_response = ''
                 # timeout flag incase there is a timeout after 2 seconds of waiting
                 timeout_flag = False
                 while True:
@@ -256,19 +256,19 @@ class Mserver:
                     except socket.timeout:
                         # a time out occurred on waiting for server response so break
                         # out of loop
-                        if len(web_serv_rappend) <= 0:
+                        if len(append_response) <= 0:
                             timeout_flag = True
                         break
                     if len(web_serv_resp) > 0:
-                        web_serv_rappend += str(web_serv_resp)
+                        append_response += str(web_serv_resp)
                     else:
                         # all the data has been received
                         break
-                print('Data: '+web_serv_rappend)
+                # print('Data: '+append_response)
                 # variable to store response to file
-                response_to_file = web_serv_rappend
+                response_to_file = append_response
                 # storing the response from the webserver to the client locally
-                web_serv_rappend += str(server_details_message)
+                append_response += str(server_details_message)
                 if timeout_flag:
                     # timeout ocurred
                     err_resp = 'HTTP/1.1 408 Request timeout \r\n\r\n'
@@ -277,7 +277,7 @@ class Mserver:
                     client_sock.send(err_resp.encode('utf8'))
                 else:
                     # sending the web server response back to the client
-                    client_sock.send(web_serv_resp.encode('utf8'))
+                    client_sock.send(web_serv_resp)
                 end_time = time.time()
                 message = 'Client with port: '+str(client_address[1])+'''\nTime     Elapsed(RTT):           '''+str(end_time- start_time)+' seconds \n'
                 print(message)
@@ -285,7 +285,7 @@ class Mserver:
                 # caching the response on the proxy server
                 proxy_temp_file = open(url_file_name, 'wb')
                 # writing entire response to file
-                proxy_temp_file.write(response_to_file)
+                proxy_temp_file.write(response_to_file.encode('utf8'))
                 proxy_temp_file.close()
                 message = 'Client with port: '+str(client_address[1])+''' got response of length
                     '''+str(len(response_to_file))+' bytes \n'
