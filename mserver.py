@@ -1,4 +1,4 @@
-import socket, sys, signal, time, re, threading, datetime, os
+import socket, sys, signal, time, re, threading, datetime
 
 # sys.argv gets the arguments from the command line
 if len(sys.argv) == 2:
@@ -21,14 +21,14 @@ class Mserver:
             # Re-use the Socket
             self.s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR, 1)
         except socket.error as s_err:
-            message = 'Unable to create/re-use the socket. Error: {}'.format(s_err)
-            print(message)
+            print(s_err)
         # bind the socket to a local host and a port
         self.s.bind(('127.0.0.1', port))
         print('socket binded to {}'.format(port))
         # server socket allowing up to 10 client connections
         self.s.listen(10)
-        message = '\nHost Name: Localhost\nHost Address: 127.0.0.1\nHost port:      '+str(port)+'\n'
+        message = '\nHost Name: Localhost\nHost Address: 127.0.0.1\nHost port:
+        '+str(port)+'\n'
         print(message)
         print('Server is ready to listen to clients\n')
 
@@ -39,7 +39,7 @@ class Mserver:
             # Establish the connection -> accept connetions from outside
             (client_sock, client_address) = self.s.accept()
             signal.signal(signal.SIGINT, self.keyboardInterruptHandler)
-            # creating a new thread for every client
+            # creating a new thread for every connection
             d = threading.Thread(name = str(client_address),
             target = self.multi_threading, args=(client_sock, client_address))
             d.setDaemon(True)
@@ -61,7 +61,6 @@ class Mserver:
             message = 'Request Size: '+str(request_length)+' bytes\n'
             print(message)
             # parsing the request line and headers sent by the client
-            # since the request will be of the form GET http://www.dave.com HTTP/1.1 extracting the http part
             try:
                 response = str(client_request).split(' ')[0].split('\'')[1]
                 print('\nREQ TYPE: '+str(response))
@@ -72,7 +71,8 @@ class Mserver:
             if response == 'GET' or 'CONNECT':
                 http_part = str(client_request).split(' ')[1]
                 print('HTTP/HTTPS: '+http_part)
-                #stripping the http part to get only the URL and removing the trailing / from the request
+                #stripping the http part to get only the URL and removing
+                # the trailing / from the request
                 double_slash_pos = str(http_part).find('//')
                 url_connect = ''
                 url_slash_check = list()
@@ -109,27 +109,33 @@ class Mserver:
                 client_req_port_start = str(url_part).find(':')
                 # if not use default port no
                 port_number = 80
-                # replacing all non alpha numeric characters with underscore using regexp lib
+                # replacing all non alpha numeric characters with underscore
+                # using regexp lib
                 url_file_name = re.sub('[^0-9a-zA-Z]+','_', url_part)
-                blocked_files[url_file_name] = False
-                # no port specified
-                if client_req_port_start == -1:
-                    pass
+                if blocked_files.get(url_file_name) and isBlocked == True:
+                    print('Connection rejected, URL is blocked')
+                    client_sock.close()
                 else:
-                    # port given in client request
-                    port_number = int(url_part.split(':')[1])
-                if http_part.split('//')[0] == 'http:' and response != 'CONNECT':
-                    print('we in')
-                    self.proxy_http(url_file_name, client_sock, port_number,
-                        client_address, start_time, url_connect, url_slash)
-                else:
-                    print('we in https:')
-                    self.proxy_https(url_file_name, client_sock, port_number,
-                        client_address, start_time, url_connect, url_slash)
+                    blocked_files[url_file_name] = False
+                    # no port specified
+                    if client_req_port_start == -1:
+                        pass
+                    else:
+                        # port given in client request
+                        port_number = int(url_part.split(':')[1])
+                    if http_part.split('//')[0] == 'http:'
+                        and response != 'CONNECT':
+                        print('we in')
+                        self.proxy_http(url_file_name, client_sock, port_number,
+                         client_address, start_time, url_connect, url_slash)
+                    else:
+                        print('we in https:')
+                        self.proxy_https(url_file_name, client_sock, port_number,
+                            client_address, start_time, url_connect, url_slash)
             else:
                 # not a GET command
-                message = 'Client with port: ' +str(client_address[1])+ '''generated
-                a call other than GET: '''+ response +'\n'
+                message = 'Client with port: ' +str(client_address[1])+ '''
+                generated a call other than GET: '''+ response +'\n'
                 print(message)
                 client_sock.send(b'HTTP/1.1 405 Method Not Allowed\r\n\r\n')
                 client_sock.close()
@@ -140,7 +146,8 @@ class Mserver:
             client_sock.send(b'')
             print('Empty message\n')
             client_sock.close()
-            message = 'Client with port: '+str(client_address[1])+'\nConnection CLOSED\n'
+            message = 'Client with port: '+str(client_address[1])+'''
+                \nConnection CLOSED\n'''
             print(message)
 
     def proxy_http(self, url_file_name, client_sock, port_number, client_address,
@@ -148,7 +155,7 @@ class Mserver:
         try:
             # getting the cached file for the url if it exists
             cached_file = open(url_file_name, 'r')
-            if isBlocked(url_file_name, blocked_files) == False:
+            if self.isBlocked(url_file_name, blocked_files) == False:
                     client_sock.close()
                     message = 'Connection CLOSED \n'
                     print(message)
@@ -156,13 +163,6 @@ class Mserver:
                 message = 'Client with port: '+str(client_address[1])+'\nCACHE HIT'
                 print(message)
                 # get proxy server details from cache
-                server_socket_details = socket.getaddrinfo('Localhost', port_number)
-                server_details_message = '<body> Cached Server Details:- <br />'
-                server_details_message += '''Server host name: localhost <br /> Server port number: '''+str(port_number)+'<br>'
-                server_details_message += 'Socket family: '+str(server_socket_details[0][0])+ '<br>'
-                server_details_message += 'Socket type: '+str(server_socket_details[0][1])+ '<br>'
-                server_details_message += 'Socket protocol: '+str(server_socket_details[0][2]) + '<br>'
-                server_details_message += 'Timeout: '+str(client_sock.gettimeout())+'<br> </body>'
                 response_message = ''
                 # print 'reading data line by line and appending it'
                 with open(url_file_name) as f:
@@ -177,15 +177,16 @@ class Mserver:
                 end_time = time.time()
                 message = 'Response Length: '+str(len(response_message))+ 'bytes'
                 print(message)
-                message = 'Time Elapsed(RTT): '+str(end_time - start_time)+' seconds'
+                message = 'Time Elapsed(RTT): '+str(end_time-start_time)+'seconds'
                 print(message)
 
 
         except IOError as e:
             message = 'Client with port: '+str(client_address[1])+'\nCACHE MISS'
             print(message)
-            '''there is no cached file for the specified URL from the proxy server and
-            cache it. To get the URL we nedd to create a socket on proxy machine'''
+            '''there is no cached file for the specified URL from the proxy server
+            and cache it. To get the URL we nedd to create a socket
+            on proxy machine'''
             proxy_sock = None
             try:
                 # creating socket from proxy server
@@ -194,32 +195,30 @@ class Mserver:
                 print('Unable to create the socket. Error: {}'.format(s_err))
                 message = 'Unable to create the socket. Error: {}'.format(s_err)
             try:
-                # setting time out so that after the last packet if no other packet comes socket will auto close in 2 seconds
+                # setting time out so that after the last packet if no other
+                # packet comes socket will auto close in 2 seconds
                 proxy_sock.settimeout(2)
                 # connecting to the url specified by the client
                 proxy_sock.connect((url_connect, port_number))
                 # sending GET request from client to the web server
                 web_request = str()
                 if url_slash: # url_slash is other than None
-                    web_request = 'GET /'+url_slash[1:]+' HTTP/1.1\r\nHost: '+url_connect+'\r\n\r\n'
+                    web_request = 'GET /'+url_slash[1:]+' HTTP/1.1\r\nHost: '
+                    +url_connect+'\r\n\r\n'
                 else:
-                    web_request = 'GET / HTTP/1.1 \r\nHost: '+str(url_connect)+'\r\n\r\n'
+                    web_request = 'GET / HTTP/1.1 \r\nHost: '+str(url_connect)+
+                    '\r\n\r\n'
                     print('Just TLD domain, no other slashes')
                 # send web request to server
                 proxy_sock.send(web_request.encode('utf8'))
                 message = 'Request size: '+str(len(web_request))+' bytes'
                 print(message)
-                message = 'REQ to server as: GET / HTTP/1.1 \nHost: '+str(url_connect)
+                message = 'REQ to server as: GET / HTTP/1.1 \nHost: '
+                    +str(url_connect)
                 print(message)
-                # getting the web server response which is expected to be a file
-                server_socket_details = socket.getaddrinfo(url_connect, port_number)
-                server_details_message = '<body> Web Server Details:- <br />'
-                server_details_message += 'Server host name: '+url_connect+''' <br /> \nServer port number:  '''+str(port_number)+'<br />\n'
-                server_details_message += 'Socket family: ' + str(server_socket_details[0][0]) + '<br />'
-                server_details_message += 'Socket type: ' + str(server_socket_details[0][1]) + '<br />'
-                server_details_message += 'Socket protocol: ' + str(server_socket_details[0][2]) + '<br />'
-                server_details_message += 'Timeout: '+str(client_sock.gettimeout())+'<br /> </body>\n'
-                # use this variable to get the web's response message and check if it is empty in the loop incase there is no response from the server
+                # use this variable to get the web's response message and check
+                # if it is empty in the loop incase there is no response
+                # from the server
                 append_response = ''
                 timeout_flag = False
                 while True:
@@ -251,7 +250,7 @@ class Mserver:
                     # sending the web server response back to the client
                     client_sock.send(web_serv_resp)
                 end_time = time.time()
-                message = 'Time Elapsed(RTT): '+str(end_time- start_time)+' seconds'
+                message = 'Time Elapsed(RTT): '+str(end_time-start_time)+' seconds'
                 print(message)
                 # caching the response on the proxy server
                 proxy_temp_file = open(url_file_name, 'wb')
@@ -270,15 +269,16 @@ class Mserver:
                 else:'''
                 error_msg = 'HTTP/1.1 404 Not Found \r\n\r\n'
                 print('HTTP/1.1 404 Not Found\n')
-                client_sock.send(b'HTTP/1.1 404 Not Found \r\n\r\n')
+                client_sock.send(error_msg.encode('utf8'))
                 end_time = time.time()
                 message = 'ERROR : '+str(e)+'\n'
                 print(message)
                 message = 'Response sent: '+error_msg+' \n'
                 print(message)
-                message = 'Time Elapsed(RTT): '+str(end_time - start_time)+' seconds \n'
+                message = 'Time Elapsed(RTT): '+str(end_time - start_time)+
+                    'seconds\n'
                 print(message)
-        # closing the connection with client
+        # closing the connection with server
         client_sock.close()
         message = 'Connection CLOSED \n'
         print(message)
@@ -319,7 +319,7 @@ class Mserver:
         print("KeyboardInterrupt (ID: {}) has been caught.".format(signal))
         exit(0)
 
-    def isBlocked(file, blocked_files):
+    def isBlocked(self, file, blocked_files):
         if blocked_files[file] == True:
             return True
 

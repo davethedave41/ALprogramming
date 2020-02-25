@@ -11,9 +11,8 @@ except socket.error as err:
 port = 12345
 # bind the port to the first computer that requests
 # to this network
-s.bind(('', port))
+s.bind(('', port)) # ip address and port number
 print("socket binded to {}".format(port))
-
 # put the socket into listening mode
 s.listen(5)
 print("socket is listening")
@@ -24,6 +23,7 @@ while True:
     # establish a connection with the client
     c, addr = s.accept()
     print('Connection req from -> {}'.format(addr))
+    print(socket.getaddrinfo(str(addr[0]),(addr[1])))
     # send msg to client
     str2byte = 'Thank you for connecting cya'
     c.send(str2byte.encode(encoding='utf-8', errors='strict'))
