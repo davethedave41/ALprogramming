@@ -1,9 +1,14 @@
 import tkinter as tk
 import io
+import twitterAPI
+import encryption
+
+twapi = twitterAPI
+crypto = encryption
+key = crypto.keyRead()
 
 HEIGHT = 5000
 WIDTH = 5000
-
 WIDGET_HEIGHT = 0.25
 WIDGET_WIDTH = 0.25
 IMG_HEIGHT = 0.075
@@ -106,14 +111,28 @@ class Sign_up(tk.Frame):
         self.enter = tk.Entry(self.frame2, bg='white',fg='black',font=('MS Sans Serif',12),bd = 2)
         self.enter.place(relx=0.01, rely=0.185,relwidth=0.2,relheight= 0.035)
 
-        self.search = tk.Button(self.frame2, fg='white', bg='#23a1f2',text= 'Search', font=('MS Sans Serif', 12),command=self.register_acc(name,master),bd=0)
+        self.search = tk.Button(self.frame2, fg='white', bg='#23a1f2',text= 'Search',
+         font=('MS Sans Serif', 12),command=lambda: self.register_acc(self.enter.get(),master),bd=0)
         self.search.place(relx=0.01, rely=0.25,relwidth=0.0825,relheight= 0.035)
 
     def register_acc(self, u_name, master):
-        with open('users.txt','a') as f:
-            f.write(u_name+'\n')
+        if twapi.legit_user(u_name):
+            u_name += '\n'
+            key = crypto.keyRead()
+            fernet = crypto.Fernet(key)
+            encrypted = fernet.encrypt(u_name.encode())
+            with open('users.txt','ab') as f:
+                f.write(encrypted)
+            master.switch_frame(User_menu).pack()
+        else:
+            self.errlabel2 = tk.Label(self.frame2, text='Please try searching for your username again.', fg='black', bg='white',font=('MS Sans Serif', 12))
+            self.errlabel2.place(relx=0, rely=0.15+0.035, relwidth=0.35,relheight=0.05)
+            self.errlabel = tk.Label(self.frame2, text='We couldn\'t find your account with that\n information',
+            fg='red', bg='white',font=('MS Sans Serif', 22), justify='left')
+            self.errlabel.place(relx=0, rely=0.035, relwidth=0.485,relheight=0.15)
+            self.enter.place(relx=0.01, rely=0.235,relwidth=0.2,relheight= 0.035)
+            self.search.place(relx=0.01, rely=0.235+0.065,relwidth=0.0825,relheight= 0.035)
 
-        pass
 class User_menu(tk.Frame):
     def __init__(self, master):
         self.canvas = tk.Canvas(master, bg='white',height=HEIGHT, width=WIDTH)

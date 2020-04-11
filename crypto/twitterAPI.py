@@ -1,18 +1,28 @@
 import twitter
 import io
+import encryption
 
 api = twitter.Api(consumer_key = 'ULhjNMU0x9QKhZ80Bv2rwg6M2',
                   consumer_secret = 'DOnEs7yRUPgdMNcnZXyEe9HcFEwaXUZWEhpW3d6UtRG49z7Bsi',
                   access_token_key = '1162030031041904640-JY4sZKv36aUF4960bgaNTsk1Hnni9m',
                   access_token_secret = 'Tv8huhZERvWCmOeJbs3sXmt9UEAADw2aOy0I7motHejur')
 
-def getTweetIDs(name):
+def legit_user(u_name):
+    try:
+        getTimeline = api.GetUserTimeline(screen_name = u_name)
+    except twitter.error.TwitterError as e:
+        error_str = str(e)
+        #error_str = error_str[26:58]
+        #print(error_str)
+        return False
+    return True
+def getTweetIDs(u_name):
     lcount = 0
     with open('tweet_ids', 'r') as f:
         for line in f:
             lcount += 1
     try:
-        statuses = api.GetUserTimeline(screen_name = name)
+        statuses = api.GetUserTimeline(screen_name = u_name)
     except twitter.error.TwitterError as e:
         error_str = str(e)
         print(error_str[26:58])
@@ -36,45 +46,15 @@ def readTweetIDs():
     with open('tweet_ids', 'r') as f:
         tweet = f.read()
     return tweet
+#string formatting
 
-getTweetIDs('davethedavfadsfasdfsdafe_14')
-
-#     pass
-# uwu = api.GetUser(screen_name ='')
-# print(uwu)
-# statuses = api.GetUserTimeline(screen_name = '')
-# wahoo = statuses[0].id
-# print(wahoo)
-# statoo = api.GetStatus(status_id = wahoo)
-# print(statoo)
-# status = api.PostUpdate('test, I\'m craving for some papaya rn')
-# print(status.text)
-# statuses = api.GetUserTimeline(screen_name = '')
-#for s in statuses:
-# print('\n%s',statuses[0].id)
-# api.DestroyStatus(1247244866003832833)
-# users = api.GetFriends()
-# print([u.name for u in users])
-# class Application(tk.Frame):
-#     def __init__(self, master=None):
-#         super().__init__(master)
-#         self.master = master
-#         self.pack()
-#         self.create_widgets()
-#
-#     def create_widgets(self):
-#         self.hi_there = tk.Button(self)
-#         self.hi_there["text"] = "Hello World\n(click me)"
-#         self.hi_there["command"] = self.say_hi
-#         self.hi_there.pack(side="top")
-#
-#         self.quit = tk.Button(self, text="QUIT", fg="red",
-#                               command=self.master.destroy)
-#         self.quit.pack(side="bottom")
-#
-#     def say_hi(self):
-#         print("hi there, everyone!")
-#
-# root = tk.Tk()
-# app = Application(master=root)
-# app.mainloop()
+crypto = encryption
+key = crypto.keyRead()
+fernet = crypto.Fernet(key)
+with open('users.txt','rb') as f:
+    for line in f:
+        decrypted = fernet.decrypt(line)
+        decrypted = decrypted.decode()
+        decrypted = decrypted.replace('\n', '')
+        if decrypted =='davethedave_14':
+            print('victory royale')
