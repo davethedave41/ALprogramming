@@ -15,7 +15,7 @@ def keyRead():
     try:
         # with open('key.key','rb') as f:
         # f.read()
-        file = open('key.key', 'rb')
+        file = open('key.key', 'rb') # must be in binary format
         key = file.read()
         file.close()
         return key
@@ -28,11 +28,12 @@ def keyRead():
 #Function to encrypt files using the key
 def encrypt(tweet, Key):
     with open('mytweets', 'rb') as f:
-        data = f.read()
-    fernet = Fernet(Key)
-    encrypted = fernet.encrypt(data)
-    with open("Files/"+ fileName, "wb") as f:
-        f.write(encrypted)
+        tweet = f.read()
+    return tweet
+#    fernet = Fernet(Key)
+    #encrypted = fernet.encrypt(data)
+#    with open("Files/"+ fileName, "wb") as f:
+#        f.write(tweet)
 
 #Function to decrypt files using the key
 def decrypt(tweet, Key):

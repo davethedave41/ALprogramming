@@ -1,12 +1,39 @@
 import twitter
-import tkinter as tk
+import io
 
-api = twitter.Api(consumer_key = '',
-                  consumer_secret = '',
-                  access_token_key = '',
-                  access_token_secret = '',
-                  sleep_on_rate_limit = True)
+api = twitter.Api(consumer_key = 'ULhjNMU0x9QKhZ80Bv2rwg6M2',
+                  consumer_secret ='DOnEs7yRUPgdMNcnZXyEe9HcFEwaXUZWEhpW3d6UtRG49z7Bsi',
+                  access_token_key = '1162030031041904640-JY4sZKv36aUF4960bgaNTsk1Hnni9m',
+                  access_token_secret = 'Tv8huhZERvWCmOeJbs3sXmt9UEAADw2aOy0I7motHejur',)
 
+def getTweetIDs():
+    lcount = 0
+    with open('tweet_ids', 'r') as f:
+        for line in f:
+            lcount += 1
+    statuses = api.GetUserTimeline(screen_name = 'davethedave_14')
+    ids_count = len(statuses)
+    if ids_count == lcount and ids_count != 0:
+        print('File is up to date\n')
+        return
+    else:
+        f = open('tweet_ids', 'a')
+        starti = lcount-1                   # starting index
+        for i in range(starti,ids_count):
+            tweet_id = str(statuses[i].id)+'\n'
+            f.write(tweet_id)
+            print(tweet_id)    # FIFO
+        f.close()
+
+
+def readTweetIDs():
+    with open('tweet_ids', 'r') as f:
+        tweet = f.read()
+    return tweet
+
+getTweetIDs()
+
+#     pass
 # uwu = api.GetUser(screen_name ='')
 # print(uwu)
 # statuses = api.GetUserTimeline(screen_name = '')
