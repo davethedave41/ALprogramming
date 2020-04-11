@@ -2,16 +2,22 @@ import twitter
 import io
 
 api = twitter.Api(consumer_key = 'ULhjNMU0x9QKhZ80Bv2rwg6M2',
-                  consumer_secret ='DOnEs7yRUPgdMNcnZXyEe9HcFEwaXUZWEhpW3d6UtRG49z7Bsi',
+                  consumer_secret = 'DOnEs7yRUPgdMNcnZXyEe9HcFEwaXUZWEhpW3d6UtRG49z7Bsi',
                   access_token_key = '1162030031041904640-JY4sZKv36aUF4960bgaNTsk1Hnni9m',
-                  access_token_secret = 'Tv8huhZERvWCmOeJbs3sXmt9UEAADw2aOy0I7motHejur',)
+                  access_token_secret = 'Tv8huhZERvWCmOeJbs3sXmt9UEAADw2aOy0I7motHejur')
 
-def getTweetIDs():
+def getTweetIDs(name):
     lcount = 0
     with open('tweet_ids', 'r') as f:
         for line in f:
             lcount += 1
-    statuses = api.GetUserTimeline(screen_name = 'davethedave_14')
+    try:
+        statuses = api.GetUserTimeline(screen_name = name)
+    except twitter.error.TwitterError as e:
+        error_str = str(e)
+        print(error_str[26:58])
+        print('\nawooga')
+        return
     ids_count = len(statuses)
     if ids_count == lcount and ids_count != 0:
         print('File is up to date\n')
@@ -25,13 +31,13 @@ def getTweetIDs():
             print(tweet_id)    # FIFO
         f.close()
 
-
+#[{'code': 34, 'message': 'Sorry, that page does not exist.'}]
 def readTweetIDs():
     with open('tweet_ids', 'r') as f:
         tweet = f.read()
     return tweet
 
-getTweetIDs()
+getTweetIDs('davethedavfadsfasdfsdafe_14')
 
 #     pass
 # uwu = api.GetUser(screen_name ='')
