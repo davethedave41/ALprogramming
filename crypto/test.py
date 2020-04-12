@@ -1,9 +1,17 @@
 import sys
+import json
+import io
 
 class Person:
     age = 23
     name = "Adam"
 
-person = Person()
-print(str(getattr(person, "name")))
-print(sys.modules['__main__'])
+jahoo = {
+            'username': 'davethedave',
+            'job': 'cuck',
+            'age': 21,
+            'wah': []
+        }
+print(jahoo['wah'])
+jahoo['wah'].append(2)
+print(jahoo['wah'])

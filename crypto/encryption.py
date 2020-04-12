@@ -27,32 +27,48 @@ def keyRead():
 
 # Function to encrypt usernames using the key
 def encrypt_users(u_name, Key):
-    u_name += '\n'
+    u_data = {'username': u_name,
+              'trust_net': [],
+              'pending_reqs': []}
+    u_data = str(u_data)
+    u_data += '\n'
     fernet = Fernet(Key)
-    encrypted = fernet.encrypt(u_name.encode())
+    encrypted = fernet.encrypt(u_data.encode())
     with open('users.txt','ab') as f:
         f.write(encrypted)
 
-# ecnrypt userbase tweets using the key
-def encrypt_tweets(tweet, Key):
-    tweet += '\n'
+# ecnrypts a single tweet
+def encrypt_tweets(tweet, u_name, Key):
+    wahoo = u_name+'\n'
+    tweet+=wahoo
     fernet = Fernet(Key)
-    encrypted = fernet.encrypt(u_name.encode())
-    with open('tweet_ids.txt','ab') as f:
+    encrypted = fernet.encrypt(tweet.encode())
+    with open('tweets.txt','ab') as f:
         f.write(encrypted)
 
-#Function to decrypt userbase tweets using the key
-def decrypt_tweets(tweet, Key):
+# decrypts tweets ONLY if user is in the trust network
+# returns a list of strings, decrypted posts must be converted to dictionaries
+def decrypt_tweets(trust_net, Key):
+    trusted = False
+    tweets = []
     fernet = Fernet(Key)
-    with open('tweet_ids.txt','rb') as f:
+    with open('tweets.txt','rb') as f:
         for line in f:
             decrypted = fernet.decrypt(line)
             decrypted = decrypted.decode()
-            decrypted = decrypted.replace('\n', '')
-            if decrypted =='u_name':
-                print('victory royale')
-                return decrypted
-    print('sorry homie')
+            for name in trust_net:
+                if name+'\n' in decrypted:
+                    decrypted = decrypted.replace(name+'\n', '')
+                    tweets.append(decrypted)
+                    trusted = True
+                    break
+            if trusted == True:
+                pass
+            else:
+                tweets.append(line)
+
+    print('victory royale')
+    return tweets
 
 # decrypt usernames using the key
 def decrypt_users(u_name, Key):
@@ -62,7 +78,8 @@ def decrypt_users(u_name, Key):
             decrypted = fernet.decrypt(line)
             decrypted = decrypted.decode()
             decrypted = decrypted.replace('\n', '')
-            if decrypted == u_name:
+            decrypted = eval(decrypted)
+            if decrypted['username'] == u_name:
                 print('victory royale')
                 return decrypted
     print('sorry homie')

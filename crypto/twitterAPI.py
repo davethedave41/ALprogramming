@@ -3,11 +3,13 @@ import io
 import encryption
 import sys
 
+crypto = encryption
 api = twitter.Api(consumer_key = 'ULhjNMU0x9QKhZ80Bv2rwg6M2',
                   consumer_secret = 'DOnEs7yRUPgdMNcnZXyEe9HcFEwaXUZWEhpW3d6UtRG49z7Bsi',
                   access_token_key = '1162030031041904640-JY4sZKv36aUF4960bgaNTsk1Hnni9m',
                   access_token_secret = 'Tv8huhZERvWCmOeJbs3sXmt9UEAADw2aOy0I7motHejur')
 
+# is this a twitter username
 def legit_user(u_name):
     try:
         getTimeline = api.GetUserTimeline(screen_name = u_name)
@@ -18,39 +20,25 @@ def legit_user(u_name):
         return False
     return True
 
+# read from twitter
 def getTweets(u_name):
-    lcount = 0
-    with open('tweet_ids', 'r') as f:
-        for line in f:
-            lcount += 1
-    statuses = api.GetUserTimeline(screen_name = u_name)
-    ids_count = len(statuses)
-    if ids_count == lcount and ids_count != 0:
-        print('File is up to date\n')
-        return
-    else:
-        f = open('tweet_ids', 'a')
-        starti = lcount-1                   # starting index
-        for i in range(starti,ids_count):
-            tweet_id = str(statuses[i].id)+'\n'
-            f.write(tweet_id)
-            print(tweet_id)    # FIFO
-        f.close()
+    tweets = api.GetUserTimeline(screen_name = u_name)
+    key = crypto.keyRead()
+    for post in tweets:
+        post = str(post)
+        post = post.replace('true','True')
+        crypto.encrypt_tweets(post,u_name,key)
 
-def readTweets():
-    with open('tweets', 'r') as f:
-        tweet = f.read()
-    return tweet
+# getting from file
+def readTweets(trust_net):
+    # returns a list of the encrypted and decrypted tweets'
+    key = crypto.keyRead()
+    listOfTweets = crypto.decrypt_tweets(trust_net, key)
+    return listOfTweets
 
-stats = api.GetUserTimeline(screen_name='davethedave_14')
-stat_str = str(stats[0])+'\n'
-stat_true = stat_str.replace("true","True")
-file = open('tweets.txt','a')
-file.write(stat_true)
-stat_dict = eval(stat_true)
-file = open('tweets.txt','r')
-for i, line in enumerate(file):
-    if i == 1:
-        datum = line
-print(datum)
-file.close()
+u_name = 'davethedave_14'
+getTweets(u_name)
+readTweets(u_name)
+awooga = readTweets([u_name])
+awoogerz = eval(awooga[0])
+print(awoogerz['id'])
