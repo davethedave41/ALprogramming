@@ -25,18 +25,44 @@ def keyRead():
         keyGen()
         keyRead()
 
-#Function to encrypt files using the key
-def encrypt(tweet, Key):
-    with open('mytweets', 'rb') as f:
-        tweet = f.read()
-    return tweet
-#    fernet = Fernet(Key)
-    #encrypted = fernet.encrypt(data)
-#    with open("Files/"+ fileName, "wb") as f:
-#        f.write(tweet)
-
-#Function to decrypt files using the key
-def decrypt(tweet, Key):
+# Function to encrypt usernames using the key
+def encrypt_users(u_name, Key):
+    u_name += '\n'
     fernet = Fernet(Key)
-    # get the tweet using api
-    decrypted = fernet.decrypt(data)
+    encrypted = fernet.encrypt(u_name.encode())
+    with open('users.txt','ab') as f:
+        f.write(encrypted)
+
+# ecnrypt userbase tweets using the key
+def encrypt_tweets(tweet, Key):
+    tweet += '\n'
+    fernet = Fernet(Key)
+    encrypted = fernet.encrypt(u_name.encode())
+    with open('tweet_ids.txt','ab') as f:
+        f.write(encrypted)
+
+#Function to decrypt userbase tweets using the key
+def decrypt_tweets(tweet, Key):
+    fernet = Fernet(Key)
+    with open('tweet_ids.txt','rb') as f:
+        for line in f:
+            decrypted = fernet.decrypt(line)
+            decrypted = decrypted.decode()
+            decrypted = decrypted.replace('\n', '')
+            if decrypted =='u_name':
+                print('victory royale')
+                return decrypted
+    print('sorry homie')
+
+# decrypt usernames using the key
+def decrypt_users(u_name, Key):
+    fernet = Fernet(Key)
+    with open('users.txt','rb') as f:
+        for line in f:
+            decrypted = fernet.decrypt(line)
+            decrypted = decrypted.decode()
+            decrypted = decrypted.replace('\n', '')
+            if decrypted == u_name:
+                print('victory royale')
+                return decrypted
+    print('sorry homie')

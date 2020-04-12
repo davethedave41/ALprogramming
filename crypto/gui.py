@@ -19,7 +19,7 @@ class TwiApp(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
         self._frame = None
-        self.switch_frame(Sign_up)
+        self.switch_frame(User_menu)
 
     def switch_frame(self, frame_class):
             # Destroys current frame and replaces it with a new one.
@@ -117,12 +117,8 @@ class Sign_up(tk.Frame):
 
     def register_acc(self, u_name, master):
         if twapi.legit_user(u_name):
-            u_name += '\n'
             key = crypto.keyRead()
-            fernet = crypto.Fernet(key)
-            encrypted = fernet.encrypt(u_name.encode())
-            with open('users.txt','ab') as f:
-                f.write(encrypted)
+            crypto.encrypt_users(u_name,key)
             master.switch_frame(User_menu).pack()
         else:
             self.errlabel2 = tk.Label(self.frame2, text='Please try searching for your username again.', fg='black', bg='white',font=('MS Sans Serif', 12))
@@ -138,27 +134,33 @@ class User_menu(tk.Frame):
         self.canvas = tk.Canvas(master, bg='white',height=HEIGHT, width=WIDTH)
         self.canvas.pack(expand=1)
 
-        self.frame = tk.Frame(master, bg='#15202b')
-        self.frame.place(relx=0,rely=0,relwidth=1,relheight=1)
+        self.frame_mid = tk.Frame(master, bg='#15202b', bd=3)
+        self.frame_mid.place(relx=0.31,rely=0,relwidth=0.4,relheight=1)
 
-        self.imageT = tk.PhotoImage(file='paras.png')
-        self.image_label = tk.Label(self.frame, image=self.imageT, bg='#15202b')
-        self.image_label.place(relx= 0.5-0.05 , rely = 0.02, relwidth =0.1,relheight=IMG_HEIGHT)
+        self.frame_left = tk.Frame(master, bg='#253341',bd=3)
+        self.frame_left.place(relx=0,rely=0,relwidth=0.31,relheight=1)
 
-        self.label = tk.Label(self.frame, text='Log in to wahoo señor', fg='white', bg='#15202b',font=('MS Sans Serif', 15))
-        self.label.place(relx=0.5 - WIDGET_WIDTH/2, rely=IMG_HEIGHT+0.02,
-                         relwidth=WIDGET_WIDTH,relheight=INP_BAR)
+        self.frame_right = tk.Frame(master, bg='#253341',bd=3)
+        self.frame_right.place(relx=0.6225,rely=0,relwidth=1,relheight=1)
 
-        self.enter = tk.Entry(self.frame, bg='#253341',fg='white',font=('MS Sans Serif',12))
-        self.enter.place(relx=0.5 - WIDGET_WIDTH/2, rely=IMG_HEIGHT+0.02+INP_BAR,
-                         relwidth=WIDGET_WIDTH,relheight= 0.05)
+        # self.imageT = tk.PhotoImage(file='paras.png')
+        # self.image_label = tk.Label(self.frame_mid, image=self.imageT, bg='#15202b')
+        # self.image_label.place(relx= 0, rely = 0.0, relwidth =0.1,relheight=IMG_HEIGHT)
 
-        self.hint_label = tk.Label(self.enter, text='Twitter Username', fg='#23a1f2', bg='#253341',font=('MS Sans Serif', 8))
-        self.hint_label.place(relx=0, rely=0,relwidth=0.235,relheight=0.26)
-
-        self.log_in = tk.Button(self.frame, bg='#23a1f2', fg='white', text="Log in", font=('MS Sans Serif', 12), command= 'hello cuck')
-        self.log_in.place(relx=0.5 - WIDGET_WIDTH/2, rely=LOGIN_BAR+0.07,
-                         relwidth=WIDGET_WIDTH, relheight=0.05)
+        # self.label = tk.Label(self.frame, text='Log in to wahoo señor', fg='white', bg='#15202b',font=('MS Sans Serif', 15))
+        # self.label.place(relx=0.5 - WIDGET_WIDTH/2, rely=IMG_HEIGHT+0.02,
+        #                  relwidth=WIDGET_WIDTH,relheight=INP_BAR)
+        #
+        # self.enter = tk.Entry(self.frame, bg='#253341',fg='white',font=('MS Sans Serif',12))
+        # self.enter.place(relx=0.5 - WIDGET_WIDTH/2, rely=IMG_HEIGHT+0.02+INP_BAR,
+        #                  relwidth=WIDGET_WIDTH,relheight= 0.05)
+        #
+        # self.hint_label = tk.Label(self.enter, text='Twitter Username', fg='#23a1f2', bg='#253341',font=('MS Sans Serif', 8))
+        # self.hint_label.place(relx=0, rely=0,relwidth=0.235,relheight=0.26)
+        #
+        # self.log_in = tk.Button(self.frame, bg='#23a1f2', fg='white', text="Log in", font=('MS Sans Serif', 12), command= 'hello cuck')
+        # self.log_in.place(relx=0.5 - WIDGET_WIDTH/2, rely=LOGIN_BAR+0.07,
+        #                  relwidth=WIDGET_WIDTH, relheight=0.05)
 
 
 if __name__ == "__main__":
