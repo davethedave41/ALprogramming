@@ -3,9 +3,13 @@ import io
 import twitterAPI
 import encryption
 
+logged_in = {'username':'ryanmcdx',
+             'trust_net': ['ryanmcdx'],
+             'pending_reqs': []}
 twapi = twitterAPI
 crypto = encryption
 key = crypto.keyRead()
+user_stats = None
 
 HEIGHT = 5000
 WIDTH = 5000
@@ -19,7 +23,7 @@ class TwiApp(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
         self._frame = None
-        self.switch_frame(User_menu)
+        self.switch_frame(Sign_in)
 
     def switch_frame(self, frame_class):
             # Destroys current frame and replaces it with a new one.
@@ -61,15 +65,9 @@ class Sign_in(tk.Frame):
                         relwidth=WIDGET_WIDTH, relheight=0.05)
 
     def log_in_attempt(self, input, master):
-        waha = 'D'
-        print('nice')
-        # with open('users.txt', 'r') as f:
-        #     for line in f:
-        #         if line == input:
-        if(waha == input):
-            print('hah gay\n')
-            master.switch_frame(User_menu).pack()
-        else:
+        key = crypto.keyRead()
+        logged_in = crypto.decrypt_users(input,key)
+        if logged_in == None:
             self.register.place(relx=0.5 - WIDGET_WIDTH/2, rely=LOGIN_BAR+0.07+0.05+0.05,
                             relwidth=WIDGET_WIDTH, relheight=0.05)
             self.log_in.place(relx=0.5 - WIDGET_WIDTH/2, rely=LOGIN_BAR+0.07+0.05,
@@ -80,6 +78,10 @@ class Sign_in(tk.Frame):
             self.warning.place(relx=0.5 - WIDGET_WIDTH/2, rely=IMG_HEIGHT+0.02+INP_BAR,
                             relwidth=WIDGET_WIDTH, relheight=0.05)
             print('youLost\n')
+        else:
+            logged_in['trust_net'].append(input)
+            print(logged_in['trust_net'])
+            master.switch_frame(Home_page).pack()
 
     def switch_sign_up(self, master):
         master.switch_frame(Sign_up).pack()
@@ -119,7 +121,7 @@ class Sign_up(tk.Frame):
         if twapi.legit_user(u_name):
             key = crypto.keyRead()
             crypto.encrypt_users(u_name,key)
-            master.switch_frame(User_menu).pack()
+            master.switch_frame(Home_page).pack()
         else:
             self.errlabel2 = tk.Label(self.frame2, text='Please try searching for your username again.', fg='black', bg='white',font=('MS Sans Serif', 12))
             self.errlabel2.place(relx=0, rely=0.15+0.035, relwidth=0.35,relheight=0.05)
@@ -129,7 +131,7 @@ class Sign_up(tk.Frame):
             self.enter.place(relx=0.01, rely=0.235,relwidth=0.2,relheight= 0.035)
             self.search.place(relx=0.01, rely=0.235+0.065,relwidth=0.0825,relheight= 0.035)
 
-class User_menu(tk.Frame):
+class Home_page(tk.Frame):
     def __init__(self, master):
         self.canvas = tk.Canvas(master, bg='white',height=HEIGHT, width=WIDTH)
         self.canvas.pack(expand=1)
@@ -143,25 +145,284 @@ class User_menu(tk.Frame):
         self.frame_right = tk.Frame(master, bg='#253341',bd=3)
         self.frame_right.place(relx=0.6225,rely=0,relwidth=1,relheight=1)
 
-        # self.imageT = tk.PhotoImage(file='paras.png')
-        # self.image_label = tk.Label(self.frame_mid, image=self.imageT, bg='#15202b')
-        # self.image_label.place(relx= 0, rely = 0.0, relwidth =0.1,relheight=IMG_HEIGHT)
+        self.key = crypto.keyRead()
+        self.height_inc = 0.15
+        self.label_no = 0
+        self.tweets_list = crypto.decrypt_tweets(logged_in['trust_net'],self.key)
 
-        # self.label = tk.Label(self.frame, text='Log in to wahoo señor', fg='white', bg='#15202b',font=('MS Sans Serif', 15))
-        # self.label.place(relx=0.5 - WIDGET_WIDTH/2, rely=IMG_HEIGHT+0.02,
-        #                  relwidth=WIDGET_WIDTH,relheight=INP_BAR)
-        #
-        # self.enter = tk.Entry(self.frame, bg='#253341',fg='white',font=('MS Sans Serif',12))
-        # self.enter.place(relx=0.5 - WIDGET_WIDTH/2, rely=IMG_HEIGHT+0.02+INP_BAR,
-        #                  relwidth=WIDGET_WIDTH,relheight= 0.05)
-        #
-        # self.hint_label = tk.Label(self.enter, text='Twitter Username', fg='#23a1f2', bg='#253341',font=('MS Sans Serif', 8))
-        # self.hint_label.place(relx=0, rely=0,relwidth=0.235,relheight=0.26)
-        #
-        # self.log_in = tk.Button(self.frame, bg='#23a1f2', fg='white', text="Log in", font=('MS Sans Serif', 12), command= 'hello cuck')
-        # self.log_in.place(relx=0.5 - WIDGET_WIDTH/2, rely=LOGIN_BAR+0.07,
-        #                  relwidth=WIDGET_WIDTH, relheight=0.05)
+        for tweet in self.tweets_list:
+            try:
+                tweet = tweet.replace('true','True')
+                tweet = eval(tweet)
+                self.u_id = tweet['id']
+                self.post = tweet['text']
+                self.add_label_dec(self.height_inc,self.label_no, self.u_id,self.post)
+            except SyntaxError as e:
+                tweet = str(tweet)
+                self.add_label_enc(self.height_inc,self.label_no, tweet)
+            self.label_no += 1
 
+        self.home = tk.Button(self.frame_left, bg='#253341', fg='white', text="Home", font=('MS Sans Serif', 15), command= 'On this page already')
+        self.home.place(relx=0.6, rely=0.055, relwidth=0.3, relheight=0.05)
+        self.profile = tk.Button(self.frame_left, bg='#253341', fg='white', text="Profile", font=('MS Sans Serif', 15), command=lambda: self.profile_switch(master))
+        self.profile.place(relx=0.6, rely=0.055+0.05, relwidth=0.3, relheight=0.05)
+        self.notifications = tk.Button(self.frame_left, bg='#253341', fg='white', text="Notifications", font=('MS Sans Serif', 15), command=lambda: self.notifications_switch(master))
+        self.notifications.place(relx=0.6, rely=0.155, relwidth=0.3, relheight=0.05)
+
+        self.enter = tk.Entry(self.frame_right, bg='#253341',fg='white',font=('MS Sans Serif',12))
+        self.enter.place(relx=0.01, rely=0.005, relwidth=0.1,relheight= 0.05)
+        self.search = tk.Button(self.frame_right, fg='white', bg='#23a1f2',text= 'Search',
+         font=('MS Sans Serif', 12),command=lambda: self.search_user(self.enter.get(),master),bd=0)
+        self.search.place(relx=0.01, rely=0.057,relwidth=0.1,relheight= 0.025)
+
+
+    def search_user(self, input, master):
+        key = crypto.keyRead()
+        user_stats = crypto.decrypt_users(input,key)
+        if user_stats != None:
+            master.switch_frame(User_page).pack()
+        else:
+            print('get rick rolled')
+
+    # adds a decrypted label
+    def add_label_dec(self,height_inc, label_no, user, post):
+        self.l = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= str(user)+post, fg='white',font=('MS Sans Serif', 10))
+        self.l.place(relx=0, rely=0.1+(height_inc*label_no), relwidth=0.7,relheight=0.1)
+
+    # adds an encrypted label
+    def add_label_enc(self,height_inc, label_no, text):
+        self.l = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= 'UNKNOWN\n'+text, fg='white',font=('MS Sans Serif', 14))
+        self.l.place(relx=0, rely=0.1+(height_inc*label_no), relwidth=0.7,relheight=0.1)
+
+    def home_switch(self,master):
+        print('Already on this page')
+
+    def profile_switch(self,master):
+        master.switch_frame(Network_page).pack()
+
+    def notifications_switch(self,master):
+        master.switch_frame(Notifications_page).pack()
+
+class User_page(tk.Frame):
+    def __init__(self, master):
+        self.canvas = tk.Canvas(master, bg='white',height=HEIGHT, width=WIDTH)
+        self.canvas.pack(expand=1)
+        self.is_add = True # add or remove button
+
+        self.frame_mid = tk.Frame(master, bg='#15202b', bd=3)
+        self.frame_mid.place(relx=0.31,rely=0,relwidth=0.4,relheight=1)
+
+        self.frame_left = tk.Frame(master, bg='#253341',bd=3)
+        self.frame_left.place(relx=0,rely=0,relwidth=0.31,relheight=1)
+
+        self.frame_right = tk.Frame(master, bg='#253341',bd=3)
+        self.frame_right.place(relx=0.6225,rely=0,relwidth=1,relheight=1)
+
+        self.label = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= 'kamilprz', fg='white',font=('MS Sans Serif', 18))
+        self.label.place(relx=0.02, rely=0.1, relwidth=0.35,relheight=0.1)
+        self.add = tk.Button(self.frame_mid, bg='#253341', fg='white', text="Add", font=('MS Sans Serif', 12), command=lambda: self.add_to_net(master))
+        self.add.place(relx=0.02, rely=0.2, relwidth=0.2, relheight=0.05)
+
+        self.home = tk.Button(self.frame_left, bg='#253341', fg='white', text="Home", font=('MS Sans Serif', 15), command=lambda: self.home_switch(master))
+        self.home.place(relx=0.6, rely=0.055, relwidth=0.3, relheight=0.05)
+        self.profile = tk.Button(self.frame_left, bg='#253341', fg='white', text="Profile", font=('MS Sans Serif', 15), command=lambda: self.profile_switch(master))
+        self.profile.place(relx=0.6, rely=0.055+0.05, relwidth=0.3, relheight=0.05)
+        self.notifications = tk.Button(self.frame_left, bg='#253341', fg='white', text="Notifications", font=('MS Sans Serif', 15), command=lambda: self.notifications_switch(master))
+        self.notifications.place(relx=0.6, rely=0.155, relwidth=0.3, relheight=0.05)
+
+        self.enter = tk.Entry(self.frame_right, bg='#253341',fg='white',font=('MS Sans Serif',12))
+        self.enter.place(relx=0.01, rely=0.005, relwidth=0.1,relheight= 0.05)
+        self.search = tk.Button(self.frame_right, fg='white', bg='#23a1f2',text= 'Search',
+         font=('MS Sans Serif', 12),command=lambda: self.search_user(self.enter.get(),master),bd=0)
+        self.search.place(relx=0.01, rely=0.057,relwidth=0.1,relheight= 0.025)
+
+    def search_user(self, input, master):
+        key = crypto.keyRead()
+        user_stats = crypto.decrypt_users(input,key)
+        if user_stats != None:
+            master.switch_frame(User_page).pack()
+        else:
+            print('get rick rolled')
+
+    def home_switch(self,master):
+        master.switch_frame(Home_page).pack()
+
+    def profile_switch(self,master):
+        master.switch_frame(Network_page).pack()
+
+    def notifications_switch(self,master):
+        master.switch_frame(Notifications_page).pack()
+
+    def add_to_net(self, master):
+        popup = tk.Tk()
+        popup.wm_title("!")
+        label = tk.Label(popup,bd=3,text='Sent network request to kamilprz',fg='black',
+        font=('MS Sans Serif', 10))
+        label.pack(side="top", pady=10)
+        B1 = tk.Button(popup, text="Okay", command = popup.destroy, font=('MS Sans Serif', 10),bg = 'white')
+        B1.pack(side='bottom')
+        if self.is_add:
+            self.add.config(text='Remove', command=lambda: self.remove_from_net(master))
+            self.is_add = False
+        popup.mainloop()
+
+    def remove_from_net(self, master):
+        popup = tk.Tk()
+        popup.wm_title("!")
+        label = tk.Label(popup,bd=3,text='kamilprz has been removed from your network',fg='black',
+        font=('MS Sans Serif', 10))
+        label.pack(side="top", pady=10)
+        B1 = tk.Button(popup, text="Okay", command = popup.destroy, font=('MS Sans Serif', 10),bg = 'white')
+        B1.pack(side='bottom')
+        if self.is_add == False:
+            self.add.config(text='Add', command=lambda: self.add_to_net(master))
+            self.is_add = True
+        popup.mainloop()
+
+class Network_page(tk.Frame):
+    def __init__(self, master):
+        self.canvas = tk.Canvas(master, bg='white',height=HEIGHT, width=WIDTH)
+        self.canvas.pack(expand=1)
+        self.is_add = True # add or remove button
+
+        self.frame_mid = tk.Frame(master, bg='#15202b', bd=3)
+        self.frame_mid.place(relx=0.31,rely=0,relwidth=0.4,relheight=1)
+
+        self.frame_left = tk.Frame(master, bg='#253341',bd=3)
+        self.frame_left.place(relx=0,rely=0,relwidth=0.31,relheight=1)
+
+        self.frame_right = tk.Frame(master, bg='#253341',bd=3)
+        self.frame_right.place(relx=0.6225,rely=0,relwidth=1,relheight=1)
+
+        self.loop_count = 0
+        self.height_inc = 0.15
+        self.labels_unit = {}
+        self.removes_unit = {}
+        for user in logged_in['trust_net']:
+            self.labels_unit[user] = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= user, fg='white',font=('MS Sans Serif', 18))
+            self.labels_unit[user].place(relx=0.02, rely=0.1+(self.height_inc*self.loop_count), relwidth=0.35,relheight=0.1)
+            self.removes_unit[user] = tk.Button(self.frame_mid, bg='#253341', fg='white', text="Remove", font=('MS Sans Serif', 12), command=lambda: self.remove_from_net(master,user))
+            self.removes_unit[user].place(relx=0.02, rely=0.2+(self.height_inc*self.loop_count), relwidth=0.2, relheight=0.05)
+            self.loop_count+=1
+
+        self.home = tk.Button(self.frame_left, bg='#253341', fg='white', text="Home", font=('MS Sans Serif', 15), command=lambda: self.home_switch(master))
+        self.home.place(relx=0.6, rely=0.055, relwidth=0.3, relheight=0.05)
+        self.profile = tk.Button(self.frame_left, bg='#253341', fg='white', text="Profile", font=('MS Sans Serif', 15), command='On this page already')
+        self.profile.place(relx=0.6, rely=0.055+0.05, relwidth=0.3, relheight=0.05)
+        self.notifications = tk.Button(self.frame_left, bg='#253341', fg='white', text="Notifications", font=('MS Sans Serif', 15), command=lambda: self.notifications_switch(master))
+        self.notifications.place(relx=0.6, rely=0.155, relwidth=0.3, relheight=0.05)
+
+        self.enter = tk.Entry(self.frame_right, bg='#253341',fg='white',font=('MS Sans Serif',12))
+        self.enter.place(relx=0.01, rely=0.005, relwidth=0.1,relheight= 0.05)
+        self.search = tk.Button(self.frame_right, fg='white', bg='#23a1f2',text= 'Search',
+         font=('MS Sans Serif', 12),command=lambda: self.search_user(self.enter.get(),master),bd=0)
+        self.search.place(relx=0.01, rely=0.057,relwidth=0.1,relheight= 0.025)
+        #self.remove_from_net(master,'kamilprz')
+
+    def search_user(self, input, master):
+        key = crypto.keyRead()
+        user_stats = crypto.decrypt_users(input,key)
+        if user_stats != None:
+            master.switch_frame(User_page).pack()
+        else:
+            print('get rick rolled')
+
+    def home_switch(self,master):
+        master.switch_frame(Home_page).pack()
+
+    def profile_switch(self,master):
+        print('You\'re already on this page')
+
+    def notifications_switch(self,master):
+        master.switch_frame(Notifications_page).pack()
+
+    def remove_from_net(self, master,u_name):
+        popup = tk.Tk()
+        popup.wm_title("!")
+        label = tk.Label(popup,bd=3,text=u_name+' has been removed from the network',fg='black',
+        font=('MS Sans Serif', 10))
+        label.pack(side="top", pady=10)
+        B1 = tk.Button(popup, text="Okay", command = popup.destroy, font=('MS Sans Serif', 10),bg = 'white')
+        B1.pack(side='bottom')
+        self.labels_unit[u_name].place_forget()
+        self.removes_unit[u_name].place_forget()
+        popup.mainloop()
+
+class Notifications_page(tk.Frame):
+    def __init__(self, master):
+        self.canvas = tk.Canvas(master, bg='white',height=HEIGHT, width=WIDTH)
+        self.canvas.pack(expand=1)
+        self.is_add = True # add or remove button
+
+        self.frame_mid = tk.Frame(master, bg='#15202b', bd=3)
+        self.frame_mid.place(relx=0.31,rely=0,relwidth=0.4,relheight=1)
+
+        self.frame_left = tk.Frame(master, bg='#253341',bd=3)
+        self.frame_left.place(relx=0,rely=0,relwidth=0.31,relheight=1)
+
+        self.frame_right = tk.Frame(master, bg='#253341',bd=3)
+        self.frame_right.place(relx=0.6225,rely=0,relwidth=1,relheight=1)
+
+        self.loop_count = 0
+        self.height_inc = 0.15
+        if logged_in['pending_reqs'] == []:
+            self.label = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= 'No new requests', fg='white',font=('MS Sans Serif', 18))
+            self.label.place(relx=0.02, rely=0.1, relwidth=0.35,relheight=0.1)
+        else:
+            for request in logged_in['pending_reqs']:
+                self.add_label(master,self.height_inc, self.loop_count, request)
+                self.loop_count+=1
+
+        self.home = tk.Button(self.frame_left, bg='#253341', fg='white', text="Home", font=('MS Sans Serif', 15), command=lambda: self.home_switch(master))
+        self.home.place(relx=0.6, rely=0.055, relwidth=0.3, relheight=0.05)
+        self.profile = tk.Button(self.frame_left, bg='#253341', fg='white', text="Profile", font=('MS Sans Serif', 15), command=lambda: self.profile_switch(master))
+        self.profile.place(relx=0.6, rely=0.055+0.05, relwidth=0.3, relheight=0.05)
+        self.notifications = tk.Button(self.frame_left, bg='#253341', fg='white', text="Notifications", font=('MS Sans Serif', 15), command=lambda: self.notifications_switch())
+        self.notifications.place(relx=0.6, rely=0.155, relwidth=0.3, relheight=0.05)
+
+        self.enter = tk.Entry(self.frame_right, bg='#253341',fg='white',font=('MS Sans Serif',12))
+        self.enter.place(relx=0.01, rely=0.005, relwidth=0.1,relheight= 0.05)
+        self.search = tk.Button(self.frame_right, fg='white', bg='#23a1f2',text= 'Search',
+         font=('MS Sans Serif', 12),command=lambda: self.search_user(self.enter.get(),master),bd=0)
+        self.search.place(relx=0.01, rely=0.057,relwidth=0.1,relheight= 0.025)
+        #self.remove_from_net(master,'kamilprz')
+
+    def search_user(self, input, master):
+        key = crypto.keyRead()
+        user_stats = crypto.decrypt_users(input,key)
+        if user_stats != None:
+            master.switch_frame(User_page).pack()
+        else:
+            print('get rick rolled')
+
+    def home_switch(self,master):
+        master.switch_frame(Home_page).pack()
+
+    def profile_switch(self,master):
+        master.switch_frame(Network_page).pack()
+
+    def notifications_switch(self):
+        print('You\'re already on this page')
+
+    # adds a label and it's remove button
+    def add_label(self, master,height_inc, label_no, user):
+        self.l = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= user, fg='white',font=('MS Sans Serif', 18))
+        self.l.place(relx=0.02, rely=0.1+(height_inc*label_no), relwidth=0.35,relheight=0.1)
+        self.r = tk.Button(self.frame_mid, bg='#253341', fg='white', text="Remove", font=('MS Sans Serif', 12))
+        self.r.place(relx=0.02, rely=0.2+(height_inc*label_no), relwidth=0.2, relheight=0.05)
+        self.r.config(command=lambda: self.remove_from_net(master,self.l,self.r,user))
+
+    def remove_from_net(self, master, label,button,u_name):
+        popup = tk.Tk()
+        popup.wm_title("!")
+        label_pop_up = tk.Label(popup,bd=3,text=u_name+' has been removed from the network',fg='black',
+        font=('MS Sans Serif', 10))
+        label_pop_up.pack(side="top", pady=10)
+        B1 = tk.Button(popup, text="Okay", command = popup.destroy, font=('MS Sans Serif', 10),bg = 'white')
+        B1.pack(side='bottom')
+        label.destroy()
+        button.destroy()
+        popup.mainloop()
 
 if __name__ == "__main__":
     app = TwiApp()

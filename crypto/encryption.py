@@ -30,8 +30,7 @@ def encrypt_users(u_name, Key):
     u_data = {'username': u_name,
               'trust_net': [],
               'pending_reqs': []}
-    u_data = str(u_data)
-    u_data += '\n'
+    u_data = str(u_data)+'\n'
     fernet = Fernet(Key)
     encrypted = fernet.encrypt(u_data.encode())
     with open('users.txt','ab') as f:
@@ -39,13 +38,12 @@ def encrypt_users(u_name, Key):
 
 # ecnrypts a single tweet
 def encrypt_tweets(tweet, u_name, Key):
-    wahoo = u_name+'\n'
-    tweet+=wahoo
     fernet = Fernet(Key)
     encrypted = fernet.encrypt(tweet.encode())
     with open('tweets.txt','ab') as f:
         f.write(encrypted)
-
+    with open('tweets.txt','a') as f:
+        f.write('\n')
 # decrypts tweets ONLY if user is in the trust network
 # returns a list of strings, decrypted posts must be converted to dictionaries
 def decrypt_tweets(trust_net, Key):
@@ -54,20 +52,19 @@ def decrypt_tweets(trust_net, Key):
     fernet = Fernet(Key)
     with open('tweets.txt','rb') as f:
         for line in f:
+            trusted = False
             decrypted = fernet.decrypt(line)
             decrypted = decrypted.decode()
             for name in trust_net:
-                if name+'\n' in decrypted:
-                    decrypted = decrypted.replace(name+'\n', '')
+                if name in decrypted:
                     tweets.append(decrypted)
                     trusted = True
                     break
             if trusted == True:
+                print('victory royale')
                 pass
             else:
-                tweets.append(line)
-
-    print('victory royale')
+                tweets.append(line.decode())
     return tweets
 
 # decrypt usernames using the key
@@ -82,4 +79,4 @@ def decrypt_users(u_name, Key):
             if decrypted['username'] == u_name:
                 print('victory royale')
                 return decrypted
-    print('sorry homie')
+    return None

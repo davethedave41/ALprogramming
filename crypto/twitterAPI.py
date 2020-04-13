@@ -25,9 +25,8 @@ def getTweets(u_name):
     tweets = api.GetUserTimeline(screen_name = u_name)
     key = crypto.keyRead()
     for post in tweets:
-        post = str(post)
-        post = post.replace('true','True')
-        crypto.encrypt_tweets(post,u_name,key)
+        tweet = str(post)
+        crypto.encrypt_tweets(tweet,u_name,key)
 
 # getting from file
 def readTweets(trust_net):
@@ -36,9 +35,9 @@ def readTweets(trust_net):
     listOfTweets = crypto.decrypt_tweets(trust_net, key)
     return listOfTweets
 
-u_name = 'davethedave_14'
-getTweets(u_name)
-readTweets(u_name)
-awooga = readTweets([u_name])
-awoogerz = eval(awooga[0])
-print(awoogerz['id'])
+
+
+# u_name = 'ryanmcdx'
+# getTweets(u_name)
+# testing encryption and decryption
+#readTweets(u_name)
