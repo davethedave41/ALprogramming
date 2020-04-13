@@ -35,9 +35,7 @@ def readTweets(trust_net):
     listOfTweets = crypto.decrypt_tweets(trust_net, key)
     return listOfTweets
 
-
-
-# u_name = 'ryanmcdx'
+# u_name = 'kamilprz'
 # getTweets(u_name)
 # testing encryption and decryption
 #readTweets(u_name)

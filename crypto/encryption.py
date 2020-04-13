@@ -26,17 +26,15 @@ def keyRead():
         keyRead()
 
 # Function to encrypt usernames using the key
-def encrypt_users(u_name, Key):
-    u_data = {'username': u_name,
-              'trust_net': [],
-              'pending_reqs': []}
-    u_data = str(u_data)+'\n'
+def encrypt_users(u_data, Key):
+    u_name = u_data['username']
+    u_data = str(u_data)
     fernet = Fernet(Key)
     encrypted = fernet.encrypt(u_data.encode())
-    with open('users.txt','ab') as f:
+    with open('Users/'+u_name+'.txt','wb') as f:
         f.write(encrypted)
 
-# ecnrypts a single tweet
+# ecnrypts a single tweet --
 def encrypt_tweets(tweet, u_name, Key):
     fernet = Fernet(Key)
     encrypted = fernet.encrypt(tweet.encode())
@@ -70,13 +68,14 @@ def decrypt_tweets(trust_net, Key):
 # decrypt usernames using the key
 def decrypt_users(u_name, Key):
     fernet = Fernet(Key)
-    with open('users.txt','rb') as f:
-        for line in f:
-            decrypted = fernet.decrypt(line)
+    try:
+        with open('Users/'+u_name+'.txt','rb') as f:
+            user_stats = f.read()
+            decrypted = fernet.decrypt(user_stats)
             decrypted = decrypted.decode()
-            decrypted = decrypted.replace('\n', '')
             decrypted = eval(decrypted)
-            if decrypted['username'] == u_name:
-                print('victory royale')
-                return decrypted
+            return decrypted
+    except FileNotFoundError as e:
+        print('nothing..')
+        return None
     return None

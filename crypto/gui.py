@@ -3,13 +3,12 @@ import io
 import twitterAPI
 import encryption
 
-logged_in = {'username':'ryanmcdx',
-             'trust_net': ['ryanmcdx'],
-             'pending_reqs': []}
+logged_in = {}
 twapi = twitterAPI
 crypto = encryption
 key = crypto.keyRead()
 user_stats = None
+search_result = ''
 
 HEIGHT = 5000
 WIDTH = 5000
@@ -65,7 +64,8 @@ class Sign_in(tk.Frame):
                         relwidth=WIDGET_WIDTH, relheight=0.05)
 
     def log_in_attempt(self, input, master):
-        key = crypto.keyRead()
+
+        global logged_in
         logged_in = crypto.decrypt_users(input,key)
         if logged_in == None:
             self.register.place(relx=0.5 - WIDGET_WIDTH/2, rely=LOGIN_BAR+0.07+0.05+0.05,
@@ -79,7 +79,6 @@ class Sign_in(tk.Frame):
                             relwidth=WIDGET_WIDTH, relheight=0.05)
             print('youLost\n')
         else:
-            logged_in['trust_net'].append(input)
             print(logged_in['trust_net'])
             master.switch_frame(Home_page).pack()
 
@@ -118,9 +117,13 @@ class Sign_up(tk.Frame):
         self.search.place(relx=0.01, rely=0.25,relwidth=0.0825,relheight= 0.035)
 
     def register_acc(self, u_name, master):
+        global logged_in
         if twapi.legit_user(u_name):
-            key = crypto.keyRead()
-            crypto.encrypt_users(u_name,key)
+
+            logged_in = {'username':u_name,
+                        'pending_reqs': [],
+                        'trust_net': [u_name]}
+            crypto.encrypt_users(logged_in,key)
             master.switch_frame(Home_page).pack()
         else:
             self.errlabel2 = tk.Label(self.frame2, text='Please try searching for your username again.', fg='black', bg='white',font=('MS Sans Serif', 12))
@@ -145,10 +148,13 @@ class Home_page(tk.Frame):
         self.frame_right = tk.Frame(master, bg='#253341',bd=3)
         self.frame_right.place(relx=0.6225,rely=0,relwidth=1,relheight=1)
 
-        self.key = crypto.keyRead()
+
         self.height_inc = 0.15
         self.label_no = 0
-        self.tweets_list = crypto.decrypt_tweets(logged_in['trust_net'],self.key)
+        try:
+            self.tweets_list = crypto.decrypt_tweets(logged_in['trust_net'],key)
+        except TypeError:
+            print('oopsie')
 
         for tweet in self.tweets_list:
             try:
@@ -177,22 +183,23 @@ class Home_page(tk.Frame):
 
 
     def search_user(self, input, master):
-        key = crypto.keyRead()
+        global search_result
         user_stats = crypto.decrypt_users(input,key)
         if user_stats != None:
+            search_result = input
             master.switch_frame(User_page).pack()
         else:
             print('get rick rolled')
 
     # adds a decrypted label
     def add_label_dec(self,height_inc, label_no, user, post):
-        self.l = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= str(user)+post, fg='white',font=('MS Sans Serif', 10))
-        self.l.place(relx=0, rely=0.1+(height_inc*label_no), relwidth=0.7,relheight=0.1)
+        self.l = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= str(user)+'\n'+post, fg='white',font=('MS Sans Serif', 10))
+        self.l.place(relx=0, rely=0.1+(height_inc*label_no), relwidth=0.6,relheight=0.1)
 
     # adds an encrypted label
     def add_label_enc(self,height_inc, label_no, text):
-        self.l = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= 'UNKNOWN\n'+text, fg='white',font=('MS Sans Serif', 14))
-        self.l.place(relx=0, rely=0.1+(height_inc*label_no), relwidth=0.7,relheight=0.1)
+        self.l = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= 'UNKNOWN\n'+text, fg='white',font=('MS Sans Serif', 10))
+        self.l.place(relx=0, rely=0.1+(height_inc*label_no), relwidth=0.6,relheight=0.1)
 
     def home_switch(self,master):
         print('Already on this page')
@@ -218,7 +225,7 @@ class User_page(tk.Frame):
         self.frame_right = tk.Frame(master, bg='#253341',bd=3)
         self.frame_right.place(relx=0.6225,rely=0,relwidth=1,relheight=1)
 
-        self.label = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= 'kamilprz', fg='white',font=('MS Sans Serif', 18))
+        self.label = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= search_result, fg='white',font=('MS Sans Serif', 18))
         self.label.place(relx=0.02, rely=0.1, relwidth=0.35,relheight=0.1)
         self.add = tk.Button(self.frame_mid, bg='#253341', fg='white', text="Add", font=('MS Sans Serif', 12), command=lambda: self.add_to_net(master))
         self.add.place(relx=0.02, rely=0.2, relwidth=0.2, relheight=0.05)
@@ -237,14 +244,17 @@ class User_page(tk.Frame):
         self.search.place(relx=0.01, rely=0.057,relwidth=0.1,relheight= 0.025)
 
     def search_user(self, input, master):
-        key = crypto.keyRead()
+        global search_result
         user_stats = crypto.decrypt_users(input,key)
         if user_stats != None:
+            search_result = input
             master.switch_frame(User_page).pack()
         else:
             print('get rick rolled')
 
     def home_switch(self,master):
+        global logged_in
+        logged_in = crypto.decrypt_users(logged_in['username'],key)
         master.switch_frame(Home_page).pack()
 
     def profile_switch(self,master):
@@ -256,7 +266,7 @@ class User_page(tk.Frame):
     def add_to_net(self, master):
         popup = tk.Tk()
         popup.wm_title("!")
-        label = tk.Label(popup,bd=3,text='Sent network request to kamilprz',fg='black',
+        label = tk.Label(popup,bd=3,text='Sent network request to '+search_result,fg='black',
         font=('MS Sans Serif', 10))
         label.pack(side="top", pady=10)
         B1 = tk.Button(popup, text="Okay", command = popup.destroy, font=('MS Sans Serif', 10),bg = 'white')
@@ -264,9 +274,13 @@ class User_page(tk.Frame):
         if self.is_add:
             self.add.config(text='Remove', command=lambda: self.remove_from_net(master))
             self.is_add = False
+        users_mod = crypto.decrypt_users(search_result,key)
+        users_mod['pending_reqs'].append(logged_in['username'])
+        crypto.encrypt_users(users_mod,key)
         popup.mainloop()
 
     def remove_from_net(self, master):
+        global logged_in
         popup = tk.Tk()
         popup.wm_title("!")
         label = tk.Label(popup,bd=3,text='kamilprz has been removed from your network',fg='black',
@@ -277,6 +291,14 @@ class User_page(tk.Frame):
         if self.is_add == False:
             self.add.config(text='Add', command=lambda: self.add_to_net(master))
             self.is_add = True
+
+        users_mod = crypto.decrypt_users(search_result,key)
+        if logged_in['username'] in users_mod['pending_reqs']:
+            users_mod['pending_reqs'].remove(logged_in['username'])
+            crypto.encrypt_users(users_mod,key)
+        else:
+            users_mod['trust_net'].remove(logged_in['username'])
+            crypto.encrypt_users(users_mod,key)
         popup.mainloop()
 
 class Network_page(tk.Frame):
@@ -294,16 +316,16 @@ class Network_page(tk.Frame):
         self.frame_right = tk.Frame(master, bg='#253341',bd=3)
         self.frame_right.place(relx=0.6225,rely=0,relwidth=1,relheight=1)
 
+        global logged_in
         self.loop_count = 0
         self.height_inc = 0.15
-        self.labels_unit = {}
-        self.removes_unit = {}
         for user in logged_in['trust_net']:
-            self.labels_unit[user] = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= user, fg='white',font=('MS Sans Serif', 18))
-            self.labels_unit[user].place(relx=0.02, rely=0.1+(self.height_inc*self.loop_count), relwidth=0.35,relheight=0.1)
-            self.removes_unit[user] = tk.Button(self.frame_mid, bg='#253341', fg='white', text="Remove", font=('MS Sans Serif', 12), command=lambda: self.remove_from_net(master,user))
-            self.removes_unit[user].place(relx=0.02, rely=0.2+(self.height_inc*self.loop_count), relwidth=0.2, relheight=0.05)
-            self.loop_count+=1
+            if user == logged_in['username'] and len(logged_in['trust_net']) == 1 :
+                self.label = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= 'No friends yet', fg='white',font=('MS Sans Serif', 18))
+                self.label.place(relx=0.02, rely=0.1, relwidth=0.35,relheight=0.1)
+            else:
+                self.add_label(master,self.height_inc, self.loop_count, user)
+                self.loop_count+=1
 
         self.home = tk.Button(self.frame_left, bg='#253341', fg='white', text="Home", font=('MS Sans Serif', 15), command=lambda: self.home_switch(master))
         self.home.place(relx=0.6, rely=0.055, relwidth=0.3, relheight=0.05)
@@ -320,14 +342,18 @@ class Network_page(tk.Frame):
         #self.remove_from_net(master,'kamilprz')
 
     def search_user(self, input, master):
-        key = crypto.keyRead()
+        global search_result
         user_stats = crypto.decrypt_users(input,key)
         if user_stats != None:
+            search_result = input
             master.switch_frame(User_page).pack()
         else:
             print('get rick rolled')
 
     def home_switch(self,master):
+
+        global logged_in
+        logged_in = crypto.decrypt_users(logged_in['username'],key)
         master.switch_frame(Home_page).pack()
 
     def profile_switch(self,master):
@@ -336,7 +362,8 @@ class Network_page(tk.Frame):
     def notifications_switch(self,master):
         master.switch_frame(Notifications_page).pack()
 
-    def remove_from_net(self, master,u_name):
+    def remove_from_net(self, master, label, button1, u_name):
+        global logged_in
         popup = tk.Tk()
         popup.wm_title("!")
         label = tk.Label(popup,bd=3,text=u_name+' has been removed from the network',fg='black',
@@ -344,12 +371,26 @@ class Network_page(tk.Frame):
         label.pack(side="top", pady=10)
         B1 = tk.Button(popup, text="Okay", command = popup.destroy, font=('MS Sans Serif', 10),bg = 'white')
         B1.pack(side='bottom')
-        self.labels_unit[u_name].place_forget()
-        self.removes_unit[u_name].place_forget()
+        label.destroy()
+        button1.destroy()
+
+        users_mod = crypto.decrypt_users(u_name,key)
+        users_mod['trust_net'].remove(logged_in['username'])
+        crypto.encrypt_users(users_mod,key)
+        logged_in['trust_net'].remove(u_name)
+        crypto.encrypt_users(logged_in,key)
         popup.mainloop()
+
+    def add_label(self, master,height_inc, label_no, user):
+        self.l = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= user, fg='white',font=('MS Sans Serif', 18))
+        self.l.place(relx=0.02, rely=0.1+(height_inc*label_no), relwidth=0.35,relheight=0.1)
+        self.remove = tk.Button(self.frame_mid, bg='#253341', fg='white', text="Remove", font=('MS Sans Serif', 12))
+        self.remove.place(relx=0.0, rely=0.2+(height_inc*label_no), relwidth=0.2, relheight=0.05)
+        self.remove.config(command=lambda: self.remove_from_net(master,self.l,self.remove,user))
 
 class Notifications_page(tk.Frame):
     def __init__(self, master):
+        global logged_in
         self.canvas = tk.Canvas(master, bg='white',height=HEIGHT, width=WIDTH)
         self.canvas.pack(expand=1)
         self.is_add = True # add or remove button
@@ -388,14 +429,18 @@ class Notifications_page(tk.Frame):
         #self.remove_from_net(master,'kamilprz')
 
     def search_user(self, input, master):
-        key = crypto.keyRead()
+        global search_result
         user_stats = crypto.decrypt_users(input,key)
         if user_stats != None:
+            search_result = input
             master.switch_frame(User_page).pack()
         else:
             print('get rick rolled')
 
     def home_switch(self,master):
+        global logged_in
+
+        logged_in = crypto.decrypt_users(logged_in['username'],key)
         master.switch_frame(Home_page).pack()
 
     def profile_switch(self,master):
@@ -408,11 +453,16 @@ class Notifications_page(tk.Frame):
     def add_label(self, master,height_inc, label_no, user):
         self.l = tk.Label(self.frame_mid,bg='#15202b',bd=3,text= user, fg='white',font=('MS Sans Serif', 18))
         self.l.place(relx=0.02, rely=0.1+(height_inc*label_no), relwidth=0.35,relheight=0.1)
-        self.r = tk.Button(self.frame_mid, bg='#253341', fg='white', text="Remove", font=('MS Sans Serif', 12))
-        self.r.place(relx=0.02, rely=0.2+(height_inc*label_no), relwidth=0.2, relheight=0.05)
-        self.r.config(command=lambda: self.remove_from_net(master,self.l,self.r,user))
+        self.accept = tk.Button(self.frame_mid, bg='#253341', fg='white', text="Accept", font=('MS Sans Serif', 12))
+        self.accept.place(relx=0.0, rely=0.2+(height_inc*label_no), relwidth=0.2, relheight=0.05)
+        self.decline = tk.Button(self.frame_mid, bg='#253341', fg='white', text="Reject", font=('MS Sans Serif', 12))
+        self.decline.place(relx=0.22, rely=0.2+(height_inc*label_no), relwidth=0.2, relheight=0.05)
+        self.accept.config(command=lambda: self.accept_in(master,self.l,self.decline,self.accept, user))
+        self.decline.config(command=lambda: self.decline_in(master,self.l,self.decline,self.accept,user))
 
-    def remove_from_net(self, master, label,button,u_name):
+
+    def decline_in(self, master, label,button1,button2,u_name):
+        global logged_in
         popup = tk.Tk()
         popup.wm_title("!")
         label_pop_up = tk.Label(popup,bd=3,text=u_name+' has been removed from the network',fg='black',
@@ -421,7 +471,32 @@ class Notifications_page(tk.Frame):
         B1 = tk.Button(popup, text="Okay", command = popup.destroy, font=('MS Sans Serif', 10),bg = 'white')
         B1.pack(side='bottom')
         label.destroy()
-        button.destroy()
+        button2.destroy()
+        button1.destroy()
+
+        logged_in['pending_reqs'].remove(u_name)
+        crypto.encrypt_users(logged_in,key)
+        popup.mainloop()
+
+    def accept_in(self, master, label,button1,button2,u_name):
+        global logged_in
+        popup = tk.Tk()
+        popup.wm_title("!")
+        label_pop_up = tk.Label(popup,bd=3,text=u_name+' has been added into the network',fg='black',
+        font=('MS Sans Serif', 10))
+        label_pop_up.pack(side="top", pady=10)
+        B1 = tk.Button(popup, text="Okay", command = popup.destroy, font=('MS Sans Serif', 10),bg = 'white')
+        B1.pack(side='bottom')
+        label.destroy()
+        button2.destroy()
+        button1.destroy()
+
+        users_mod = crypto.decrypt_users(u_name,key)
+        users_mod['trust_net'].append(logged_in['username'])
+        crypto.encrypt_users(users_mod,key)
+        logged_in['pending_reqs'].remove(u_name)
+        logged_in['trust_net'].append(u_name)
+        crypto.encrypt_users(logged_in,key)
         popup.mainloop()
 
 if __name__ == "__main__":
